@@ -26,5 +26,12 @@ jobs:
       - name: Checkout code
       - uses: actions/checkout@v3
       
-      - name: 
+      - name: Copy PowerShell script to Windows Machine
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.WINDOWS_MACHINE_HOST }}  # Add your Windows machine's hostname or IP address as a GitHub secret.
+          username: ${{ secrets.WINDOWS_MACHINE_USERNAME }}  # Add the username to login to your Windows machine as a GitHub secret.
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Add the private SSH key associated with the GitHub Actions runner as a GitHub secret.
+          source: "."  # Replace with the actual path of your PowerShell script in the GitHub workspace.
+          target: "C:/temp"  # Replace with the target path on the Windows machine.
 
