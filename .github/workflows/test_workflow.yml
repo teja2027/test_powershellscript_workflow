@@ -26,12 +26,23 @@ jobs:
       - name: Checkout code
       - uses: actions/checkout@v3
       
-      - name: Copy PowerShell script to Windows Machine
-        uses: appleboy/scp-action@main
-        with:
-          host: ${{ secrets.WINDOWS_MACHINE_HOST }} 
-          username: ${{ secrets.WINDOWS_MACHINE_USERNAME }} 
-          key: ${{ secrets.SSH_PRIVATE_KEY }} 
-          source: "." 
-          target: "C:/temp" 
+      
+- name: Install Azure PowerShell
+        run: |
+          pwsh -Command "Install-Module -Name Az -Force -AllowClobber -Scope CurrentUser"
+          pwsh -Command "Import-Module Az"
 
+      - name: Copy PowerShell script to Azure VM
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          VM_PUBLIC_IP: "52.137.41.254"  # Replace with the public IP of your Azure Windows VM
+        run: |
+          $securePassword = ConvertTo-SecureString -AsPlainText -Force $env:AZURE_CLIENT_SECRET
+          $credential = New-Object -TypeName PSCredential -ArgumentList $env:AZURE_CLIENT_ID, $securePassword
+
+          az login --service-principal --username $env:AZURE_CLIENT_ID --password $env:AZURE_CLIENT_SECRET --tenant $env:AZURE_TENANT_ID
+          az vm run-command invoke -g "resource-group-name" -n "vm-name" --command-id RunPowerShellScript --scripts "mkdir C:\path\on\vm"
+          az vm run-command invoke -g "resource-group-name" -n "vm-name" --command-id RunPowerShellScript --scripts "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/username/repo/main/path/to/your/powershell_script.ps1' -OutFile 'C:\path\on\vm\powershell_script.ps1'"
